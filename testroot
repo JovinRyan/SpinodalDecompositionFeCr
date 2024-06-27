@@ -1,0 +1,4 @@
+app_name = spinodal_decomposition_fe_cr
+allow_warnings = false
+allow_unused = false
+allow_override = false

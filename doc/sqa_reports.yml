@@ -1,0 +1,6 @@
+Applications:
+    spinodal_decomposition_fe_cr:
+        app_types:
+            - SpinodalDecompositionFeCrApp
+        content_directory: ${ROOT_DIR}/doc/content
+        log_default: WARNING
