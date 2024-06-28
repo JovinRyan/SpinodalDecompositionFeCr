@@ -1,3 +1,7 @@
+[GlobalParams]
+  block = 0
+[]
+
 [Mesh]
   type = GeneratedMesh
   dim = 2
@@ -18,6 +22,23 @@
   [w] #chemical potential ev/mol
     order = FIRST
     family = LAGRANGE
+  []
+[]
+
+[AuxVariables]
+  [f_density]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+[]
+
+[AuxKernels]
+  [f_density]
+    type = TotalFreeEnergy
+    variable = f_density
+    f_name = 'f_loc'
+    kappa_names = 'kappa_c'
+    interfacial_vars = c
   []
 []
 
@@ -62,12 +83,34 @@
 []
 
 [Materials]
-  [constants]
+  [kappa]
     type = GenericFunctionMaterial
-    block = 0
-    prop_names = 'kappa_c M'
-    prop_values = '8.125e-16*6.24150934e+18*1e+09^2*1e-27
-                   2.2841e-26*1e+09^2/6.24150934e+18/1e-27'
+    prop_names = 'kappa_c'
+    prop_values = '8.125e-16*6.24150934e+18*1e+09^2*1e-27'
+  []
+
+  [mobility]
+    type = DerivativeParsedMaterial
+    property_name = M
+    coupled_variables = c
+    constant_names = 'Acr    Bcr    Ccr    Dcr
+                            Ecr    Fcr    Gcr
+                            Afe    Bfe    Cfe    Dfe
+                            Efe    Ffe    Gfe
+                            nm_m   eV_J   d'
+    constant_expressions = '-32.770969 -25.8186669 -3.29612744 17.669757
+                            37.6197853 20.6941796  10.8095813
+                            -31.687117 -26.0291774 0.2286581   24.3633544
+                            44.3334237 8.72990497  20.956768
+                            1e+09      6.24150934e+18          1e-27'
+    expression = 'nm_m^2/eV_J/d*((1-c)^2*c*10^
+                (Acr*c+Bcr*(1-c)+Ccr*c*log(c)+Dcr*(1-c)*log(1-c)+
+                Ecr*c*(1-c)+Fcr*c*(1-c)*(2*c-1)+Gcr*c*(1-c)*(2*c-1)^2)
+                +c^2*(1-c)*10^
+                (Afe*c+Bfe*(1-c)+Cfe*c*log(c)+Dfe*(1-c)*log(1-c)+
+                Efe*c*(1-c)+Ffe*c*(1-c)*(2*c-1)+Gfe*c*(1-c)*(2*c-1)^2))'
+    derivative_order = 1
+    outputs = exodus
   []
 
   [local_energy]
@@ -82,6 +125,13 @@
     expression = 'eV_J*d*(A*c+B*(1-c)+C*c*log(c)+D*(1-c)*log(1-c)+
                 E*c*(1-c)+F*c*(1-c)*(2*c-1)+G*c*(1-c)*(2*c-1)^2)'
     derivative_order = 2
+  []
+
+  [precipitate_indicator]
+    type = ParsedMaterial
+    property_name = prec_indic
+    coupled_variables = c
+    expression = if(c>0.6,0.0016,0)
   []
 []
 
@@ -147,6 +197,16 @@
 
   [nodes]
     type = NumNodes
+  []
+
+  [precipitate_area]
+    type = ElementIntegralMaterialProperty
+    mat_prop = prec_indic
+  []
+
+  [total_energy]
+    type = ElementIntegralVariablePostprocessor
+    variable = f_density
   []
 []
 
